@@ -1,27 +1,35 @@
-# 🏍️ SmartRide — ESP32 Smart Helmet & Vehicle Safety System
+# SmartRide — ESP32 Smart Helmet & Vehicle Safety System
 
 > A dual-node IoT safety system enforcing ignition interlocks, crash detection, and real-time GPS emergency alerts — all over a local ESP-NOW radio link with simultaneous WiFi internet access.
 
 ---
 
-## 📸 System Overview
+## System Overview
 
 ```
-┌──────────────────────────────┐          ┌──────────────────────────────────┐
-│       HELMET NODE            │          │         VEHICLE GATEWAY          │
-│  ┌──────────┐  ┌──────────┐  │          │  ┌──────────┐  ┌──────────────┐  │
-│  │ MQ-3     │  │ IR       │  │ ESP-NOW  │  │ MPU6050  │  │ NEO-6M GPS  │  │
-│  │ (Alcohol)│  │ (Wear)   │  │ ───────► │  │ (Crash)  │  │ (Location)  │  │
-│  └──────────┘  └──────────┘  │          │  └──────────┘  └──────────────┘  │
-│        ESP32 / ESP32-CAM     │          │  ┌──────────┐  ┌──────────────┐  │
-└──────────────────────────────┘          │  │  Relay   │  │  Emergency  │  │
-                                          │  │ (Pin 25) │  │  Button     │  │
-                                          │  └──────────┘  └──────────────┘  │
-                                          │          ESP32 (Gateway)          │
-                                          │              │                    │
-                                          │              ▼                    │
-                                          │      WiFi → Telegram Bot          │
-                                          └──────────────────────────────────┘
+╔══════════════════════════════╗                    ╔══════════════════════════════════════╗
+║        HELMET NODE           ║                    ║          VEHICLE GATEWAY             ║
+║      (ESP32 / ESP32-CAM)     ║                    ║             (ESP32)                  ║
+║                              ║                    ║                                      ║
+║  ┌───────────────────────┐   ║                    ║  ┌─────────────┐  ┌───────────────┐  ║
+║  │  MQ-3 Alcohol Sensor  │   ║   ESP-NOW (Local)  ║  │   MPU6050   │  │  NEO-6M GPS   │  ║
+║  │  GPIO 34 (Digital)    │   ║  ══════════════►   ║  │  Crash Det. │  │  Live Coords  │  ║
+║  └───────────────────────┘   ║                    ║  │  I2C 21/22  │  │  UART2 16/17  │  ║
+║                              ║   Heartbeat Every  ║  └─────────────┘  └───────────────┘  ║
+║  ┌───────────────────────┐   ║       1 sec        ║                                      ║
+║  │  IR Proximity Sensor  │   ║  ◄══════════════   ║  ┌─────────────┐  ┌───────────────┐  ║
+║  │  GPIO 35 (Digital)    │   ║                    ║  │ Relay Module│  │  SOS Button   │  ║
+║  └───────────────────────┘   ║                    ║  │  Ignition   │  │  Manual Alert │  ║
+║                              ║                    ║  │  GPIO 25    │  │  GPIO 15      │  ║
+╚══════════════════════════════╝                    ║  └─────────────┘  └───────────────┘  ║
+                                                    ║                                      ║
+                                                    ║              │ WiFi                  ║
+                                                    ║              ▼                       ║
+                                                    ║  ┌────────────────────────────────┐  ║
+                                                    ║  │   Telegram Bot  📱             │  ║
+                                                    ║  │   GPS-tagged Emergency Alerts  │  ║
+                                                    ║  └────────────────────────────────┘  ║
+                                                    ╚══════════════════════════════════════╝
 ```
 
 The **Helmet Node** continuously streams sensor data over ESP-NOW. The **Vehicle Gateway** processes this data locally to control the ignition relay, while simultaneously connected to WiFi for GPS-tagged emergency Telegram alerts.
@@ -102,7 +110,7 @@ Install the following via **Arduino Library Manager** (`Sketch → Include Libra
 1. Open `esp32helmet.ino` in Arduino IDE.
 2. Paste the Gateway's MAC address and WiFi channel:
    ```cpp
-   uint8_t mainBoardAddress[] = {0xB4, 0xBF, 0xE9, 0x0F, 0x39, 0xB4}; // ← Replace
+   uint8_t mainBoardAddress[] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF}; // ← Replace
    #define WIFI_CHANNEL 11                                               // ← Replace
    ```
 3. Flash the board. Confirm in Serial Monitor: `✅ ESP-NOW LINK OK`.
@@ -152,8 +160,6 @@ Alert cooldown is **15 seconds** to prevent spam.
 SmartRide/
 ├── esp32bike.ino        # Gateway Node — Vehicle firmware
 ├── esp32helmet.ino      # Sensor Node — Helmet firmware
-├── diagrams/
-│   └── wiring.png       # Hardware wiring diagram (add your own)
 └── README.md
 ```
 
